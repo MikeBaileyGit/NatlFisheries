@@ -1,0 +1,89 @@
+---
+title: "import_viz"
+author: "Ella Zhang"
+date: "11/3/2020"
+output: html_document
+---
+
+## Preparation
+
+```{r setup, include = TRUE, message = FALSE, warning = FALSE}
+
+# Load packages used
+library(knitr)
+library(car)
+library(AER)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+
+# Set up
+opts_chunk$set(echo = TRUE)
+options(digits = 3)
+opts_knit$set(root.dir ="~/Desktop/NatlFisheriesGit/2_data/TradeVolume")
+
+# Remove objects from the previous session
+rm(list = ls(all = TRUE))
+
+# Load the data set
+dta <- read.csv("monthly_cleaned.csv")
+dta = subset(dta, select = -c(X) )
+dta$year_month <- as.yearmon(paste(dta$year, dta$month), "%Y %B")
+dta = as_tibble(dta)
+glimpse(dta)
+
+```
+
+## Data Visualization
+
+```{r tidy = FALSE, message = FALSE}
+
+dta %>% 
+  group_by(country_name) %>% 
+  summarise(volume_sum = sum(volume_kg)) %>% 
+  arrange(desc(volume_sum))
+  
+
+dta_country = dta %>% 
+  group_by(year_month, country_name) %>% 
+  summarise(volume_sum = sum(volume_kg)) %>% 
+  filter(country_name %in% c("VIETNAM","CHINA","BRAZIL","PHILIPPINES"))
+
+head(dta_country)
+
+```
+
+```{r pressure}
+
+ggplot(dta_country,aes(year_month,volume_sum)) + 
+  geom_path(aes(color=country_name))
+
+```
+
+
+
+```{r pressure}
+
+
+
+```
+
+```{r tidy = FALSE}
+
+dta_country = dta %>% 
+  group_by(year_month,country_name) %>% 
+  summarise(volume_sum=sum(volume_kg))
+
+
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

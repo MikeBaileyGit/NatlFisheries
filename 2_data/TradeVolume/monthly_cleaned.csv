@@ -1,4 +1,4 @@
-,Year,Month,Product Name,Country Name,Volume (kg),Value (USD),Trade Type,Census Country Code,Edible code,FAO Country Code,HTS Number,RFMO,Trade Associations,US Customs District Code,US Customs District Name,Month number
+,year,month,product_name,country_name,volume_kg,value_USD,trade_type,census_country_code,edible_code,FAO_country_code,HTS_number,RFMO,trade_associations,US_customs_district_code,US_customs_district_name,month_number
 0,2012,March,CATFISH (PANGASIUS) FROZEN,VIETNAM,73936,204302,IMP,5520,E,704,303240020,,"APEC, ASEAN",27,"LOS ANGELES, CA",3
 1,2012,March,CATFISH NSPF FROZEN,VIETNAM,4817,11682,IMP,5520,E,704,303240050,,"APEC, ASEAN",32,"HONOLULU, HI",3
 2,2012,March,CATFISH (ICTALURUS) FILLET FRESH,CHINA,15436,137700,IMP,5700,E,156,304320010,CCAMLR,"APEC, CCAMLR, ICCAT",13,"BALTIMORE, MD",3
