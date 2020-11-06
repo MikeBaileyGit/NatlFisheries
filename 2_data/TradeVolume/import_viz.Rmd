@@ -19,6 +19,7 @@ library(ggplot2)
 library(reshape2)
 library(gridExtra)
 library(lubridate)
+library(RColorBrewer)
 
 # Set up
 opts_chunk$set(echo = TRUE)
@@ -90,6 +91,7 @@ dta_vietnam = dta %>%
   filter(country_name %in% c("VIETNAM"))
 
 dta_vietnam
+summary(dta_vietnam)
 
 ```
 
@@ -305,9 +307,52 @@ ggsave('figures/fig7.png',dpi=300)
 
 ```
 
+```{r tidy = FALSE, message = FALSE}
 
+dta_map = dta %>% 
+  group_by(country_name) %>% 
+  summarise(volume_sum = sum(volume_kg)) %>% 
+  arrange(desc(volume_sum)) %>% 
+  filter(volume_sum > 10000)
+  
 
+dta_map$country_name <- tolower(dta_map$country_name)
+substr(dta_map$country_name, 1, 1) <- toupper(substr(dta_map$country_name, 1, 1))
 
+dta_map
 
+```
 
+```{r tidy = FALSE, message = FALSE}
 
+library(maps)
+world_map <- map_data("world")
+map_subset = world_map %>%
+  full_join(dta_map, by = c("region" = "country_name")) %>%
+  filter(region != "Antarctica")
+
+plain <- theme(
+  axis.text = element_blank(),
+  axis.line = element_blank(),
+  axis.ticks = element_blank(),
+  panel.border = element_blank(),
+  panel.grid = element_blank(),
+  axis.title = element_blank(),
+  panel.background = element_rect(fill = "white"),
+  plot.title = element_text(hjust = 0.5)
+)
+
+ggplot(data = map_subset, mapping = aes(x = long, y = lat, group = group)) + 
+  coord_fixed(1.26) +
+  geom_polygon(aes(fill = volume_sum), color = "gray", size = 0.1) +
+  scale_fill_distiller(palette ="Blues", direction = 1, na.value="white") +
+  guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5, 
+                                barwidth = 15, barheight = 1, ticks = FALSE)) +
+  ggtitle("Major Catfish Exporting Countries to the United States from 2012 to 2020") +
+  labs(fill = "Volume of Catfish Imported") +
+  plain +
+  theme(legend.position="bottom")
+
+ggsave('figures/fig8.png',dpi=300)
+
+```
