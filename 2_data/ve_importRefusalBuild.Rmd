@@ -111,6 +111,14 @@ fdaProducts[grepl("siluriformes", fdaProducts$Var1),]
 ```
 
 ```{r}
+## Create catfish dummy for FDA data
+fda = mutate(fda, catfish = ifelse(fda$PRDCT_CODE_DESC_TEXT %in% fdaCatfish$Var1, 1, 0))
+
+## Check records flagged with catfish dummy
+fda[fda$catfish == 1,]
+```
+
+```{r}
 ## Create flag for Product Descriptions that contains words from the FSIS document
 fsis.words = as.vector(fsis$word)
 pattern = paste(fsis.words, collapse="|")
@@ -121,14 +129,11 @@ fda = mutate(fda, fsis= ifelse(grepl(pattern, fda$PRDCT_CODE_DESC_TEXT), 1, 0))
 ## Check records flagged with catfish dummy
 fda[fda$fsis == 1,]
 ```
-
 ```{r}
-## Create catfish dummy for FDA data
-fda = mutate(fda, fsis= ifelse(fda$PRDCT_CODE_DESC_TEXT %in% fsis$word, 1, 0))
-
-## Check records flagged with catfish dummy
-fda[fda$fsis == 1,]
+## Product Descriptions flagged by FSIS indicator
+fdaFSIS = distinct(fda[fda$fsis==1,], PRDCT_CODE_DESC_TEXT)
 ```
+
 
 ```{r}
 ## USDA Species Category Description Frequency Table
@@ -141,7 +146,7 @@ usdaCatfish = usdaProducts[grepl("Siluriformes", usdaProducts$Var1),]
 ```
 
 ```{r}
-## Create catfish dummy for FDA data
+## Create catfish dummy for USDA data
 usda = mutate(usda, catfish = ifelse(usda$species_name %in% usdaCatfish$Var1, 1, 0))
 
 ## Check records flagged with catfish dummy
@@ -170,14 +175,21 @@ usda$date = as.Date(usda$received_lot_date, '%Y-%m-%d')
 
 ```{r}
 ## Convert ISO Country Code to Long Name
-fda$country = toupper(countrycode(fda$ISO_CNTRY_CODE, origin= 'iso2c', destination ='country.name'))
+fda$country_std = toupper(countrycode(fda$ISO_CNTRY_CODE, origin= 'iso2c', destination= 'country.name'))
+```
+
+```{r}
+## Convert ISO Country Code to Long Name
+usda$country_iso = toupper(countrycode(usda$country, origin= 'country.name', destination= 'iso2c'))
+
+usda$country_std = toupper(countrycode(usda$country_iso, origin= 'iso2c', destination= 'country.name'))
 ```
 
 ## Pre-Merge: Add source and limit to relevant variables
 
 ```{r}
 ## Specify relevant variables to combine
-fdaVars = c("catfish","date","country", "MFG_FIRM_FEI_NUM", "LGL_NAME", "ENTRY_NUM", "PRDCT_CODE_DESC_TEXT")
+fdaVars = c("catfish","date","country_std", "MFG_FIRM_FEI_NUM", "LGL_NAME", "ENTRY_NUM", "PRDCT_CODE_DESC_TEXT")
 
 ## Subset FDA data and add source
 fdaSubset = fda[fdaVars]
@@ -186,7 +198,7 @@ fdaSubset$source = "FDA"
 
 ```{r}
 ## Specify relevant variables to combine
-usdaVars = c("catfish","date","country", "export_establishment", "company_name" "app_lot_number", "product_category", "species_name")
+usdaVars = c("catfish","date","country_std", "export_establishment", "company_name", "app_lot_number", "product_category", "species_name")
 
 ## Subset FDA data and add source
 usdaSubset = usda[usdaVars]
@@ -201,7 +213,10 @@ composite = rbind.fill(fdaSubset, usdaSubset)
 
 composite
 ```
-
+## Check on merged values
+```{r}
+compositeCountries = distinct(composite, country_std)
+```
 
 ## Export
 

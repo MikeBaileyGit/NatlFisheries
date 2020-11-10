@@ -176,4 +176,29 @@ ggplot(monthlyByCountryLong, aes(x= yearmon, y= x, fill= country)) +
 
 ggsave("output/figures/refusals/monthlyImportRefusalByCountryArea.png")
 ```
+## Number Calculations
+```{r}
+avgRefusalsPrePostSep2017 =  function(data) {
+  pre = data[1:44,]
+  post = data[45:81,]
+  preAvg = mean(pre$x)
+  postAvg = mean(post$x)
+  deltaAvg = (postAvg - preAvg)/preAvg * 100
+  print(paste("The average number of import refusals before September 2017 is ", round(preAvg,2), "."))
+  print(paste("The average number of import refusals on and after September 2017 is ", round(postAvg,2), "."))
+  print(paste("After shifting authority to the USDA, the average number of refusals changed by ", round(deltaAvg,2), "%."))
+}
 
+avgRefusalsPrePostSep2017(monthly)
+```
+```{r}
+avgRefusalsPrePostSep2017(monthlyVietnam)
+```
+
+```{r}
+avgRefusalsPrePostSep2017(monthlyChina)
+```
+
+```{r}
+avgRefusalsPrePostSep2017(monthlyThailand)
+```
