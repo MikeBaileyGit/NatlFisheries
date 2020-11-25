@@ -215,10 +215,10 @@ ggplot(dta_vietnam_halfyear,aes(dategroup, halfyear_volume)) +
   geom_path() + 
   geom_vline(xintercept = as.Date(c('2016-03-01','2019-11-05')),
              color='steelblue4', linetype='dashed') +
-  annotate('text', x = as.Date('2016-03-01'), y = 52000000,
+  annotate('text', x = as.Date('2016-03-01'), y = 52,
            label = ' March 2016:\n Inspection responsibility\n transferred from FDA to USDA',
            size = 3, color = 'steelblue4', hjust = 0) +
-  annotate('text', x = as.Date('2019-11-05'), y = 52000000,
+  annotate('text', x = as.Date('2019-11-05'), y = 52,
            label = ' November 2019:\n USDA granted\n equivalence to\n Vietnam',
            size = 3, color = 'steelblue4', hjust = 0) +
   labs(title = 'Volume of Catfish Imported from Vietnam by 6 Months from 2012 to 2020', 
