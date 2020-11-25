@@ -1,0 +1,143 @@
+---
+title: "Import Rejection Consolidation of FDA and USDA data"
+author: "Vince Egalla"
+date: "11/24/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dependencies
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(plyr)
+library(dplyr)
+library(countrycode)
+library(lubridate)
+library(ggplot2)
+#library(extrafont)
+#font_import()
+#library(tabulizer)
+```
+
+## Load Data
+
+```{r}
+## FDA
+fda2002 = read_csv("raw/FDA/Import_Refusal_2002-2006/REFUSAL_ENTRY_2002_2006.CSV")
+fda2007 = read_csv("raw/FDA/Import_Refusal_2007-2010/REFUSAL_ENTRY_2007_2010.CSV")
+fda2011 = read_csv("raw/FDA/Import_Refusal_2011-2013/REFUSAL_ENTRY_2011_2013.CSV")
+fda2014 = read_csv("raw/FDA/Import_Refusal_2014-present/REFUSAL_ENTRY_2014-September2020.CSV")
+```
+
+```{r}
+## Vertical join of USDA Archived & Current
+fda = rbind(fda2002, fda2007, fda2011, fda2014)
+```
+
+## Flag catfish/pangasius records in both
+
+```{r}
+## FDA Product Description Frequency Table
+fda$PRDCT_CODE_DESC_TEXT = tolower(fda$PRDCT_CODE_DESC_TEXT)
+
+## FDA Product Description Frequency Table
+fdaProducts = as.data.frame(table(fda$PRDCT_CODE_DESC_TEXT))
+```
+
+```{r}
+## Check product categories given keyword searches
+fdaCatfish = fdaProducts[grepl("catfish", fdaProducts$Var1),]
+```
+
+```{r}
+## Check product categories given keyword searches / expand this search to use all common names of siluriformes according to FSIS
+fdaProducts[grepl("pangasius", fdaProducts$Var1),]
+```
+
+```{r}
+## Check product categories given keyword searches / expand this search to use all common names of siluriformes according to FSIS
+fdaProducts[grepl("siluriformes", fdaProducts$Var1),]
+```
+
+```{r}
+## Create catfish dummy for FDA data
+fda = mutate(fda, catfish = ifelse(fda$PRDCT_CODE_DESC_TEXT %in% fdaCatfish$Var1, 1, 0))
+
+## Check records flagged with catfish dummy
+fda[fda$catfish == 1,]
+```
+
+
+## Standardize date between FDA and USDA
+
+```{r}
+## Check date data type
+typeof(fda$REFUSAL_DATE)
+
+## Convert to numeric
+fda$date = as.Date(fda$REFUSAL_DATE, '%d-%b-%y')
+```
+
+## Standardize country between FDA and USDA
+
+```{r}
+## Convert ISO Country Code to Long Name
+fda$country_std = toupper(countrycode(fda$ISO_CNTRY_CODE, origin= 'iso2c', destination= 'country.name'))
+```
+```{r}
+## Aggregate refusals to a daily level
+daily = aggregate(fda$catfish, by=list(category= fda$date), FUN= sum)
+```
+
+```{r}
+## Create Year-Month variable for aggregation
+fda$month = format(as.Date(fda$date),"%Y-%m")
+
+## Aggregate refusals to a monthly level
+monthly = aggregate(fda$catfish, by=list(category= fda$month), FUN= sum)
+```
+
+## Visualize catfish refusals
+```{r fig.width= 7, fig.height= 3}
+## Daily refusals over time period
+ggplot(daily, aes(x= category, y= x)) +
+  geom_point() +
+  labs(x= "Year", y= "# Import Refusals of Catfish", title= "Catfish Import Refusals from January 2014 to September 2020 by Day") +
+  theme(axis.text.x= element_text(angle= 90, vjust= 0.5))
+
+ggsave("output/figures/refusals/dailyImportRefusalAllCountries.png")
+```
+
+```{r fig.width= 20, fig.height= 6}
+## Monthly refusals over time period
+ggplot(monthly, aes(x= category, y= x, group= 1)) +
+  geom_line() +
+  labs(x= "Year", y= "# Import Refusals of Catfish", title= "Catfish Import Refusals from 2002 - 2020\nFDA DATA ONLY") +
+  theme(axis.text.x= element_blank()) +
+  ylim(0, 30) + 
+  geom_vline(xintercept= "2002-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2003-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2004-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2005-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2006-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2007-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2008-01", linetype= "dashed", color= "darkred") + annotate("text", x= "2008-02", y= 30, color= "darkred", label= "2008", hjust= 0, vjust= 1) +
+  geom_vline(xintercept= "2009-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2010-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2011-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2012-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2013-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2014-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2015-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2016-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2017-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2018-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2019-01", linetype= "dashed", color= "darkred") + 
+  geom_vline(xintercept= "2020-01", linetype= "dashed", color= "darkred") 
+ggsave("output/figures/refusals/monthlyImportRefusalFDA2002_present.png")
+```
