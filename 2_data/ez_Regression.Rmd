@@ -139,9 +139,98 @@ export_summs(OLS1, OLS2, OLS3,
 
 ```
 
+## Include all countries
 
+```{r tidy = FALSE, message = FALSE}
 
+# Subset to Vietnam
+import_all = import %>% 
+  group_by(year_month, country_name) %>% 
+  summarise(volume_sum = sum(volume_kg),
+            value_sum = sum(value_USD))
 
+import_all
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+# Subset to Vietnam
+refusal_all = refusal %>% 
+  mutate(year_month = as.yearmon(date, "%Y %B")) %>%
+  group_by(year_month, country_std) %>%
+  summarise(refusal_count = n())
+
+refusal_all
+
+```
+
+## Merge import and refusal
+
+```{r tidy = FALSE, message = FALSE}
+
+dta_all = import_all %>%
+  full_join(refusal_all, by = c("year_month","country_name" = "country_std")) %>%
+#  select(-c(country_std)) %>%
+  mutate(USDA_dummy = ifelse(year_month > as.yearmon("2016-02"), 1, 0),
+         year = year(year_month),
+         month = month(year_month))
+
+dta_all
+write.csv(dta_all,"output/build/ez_merged_data.csv")
+
+```
+
+## Statistical Analysis
+
+```{r tidy = FALSE, message = FALSE}
+
+OLS.1 <- lm(refusal_count ~ USDA_dummy + volume_sum, 
+            data = dta_all)
+
+summ(OLS.1, digits = 3)
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+# Create an interaction variable
+dta_all$USDAxVolume = dta_all$USDA_dummy * dta_all$volume_sum
+
+OLS.2 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume, 
+            data = dta_all)
+
+summ(OLS.2, digits = 3)
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+# Add factor(month)
+OLS.3 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month), 
+            data = dta_all)
+
+summ(OLS.3, digits = 3)
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+# Add factor(country_name)
+OLS.4 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month) + factor(country_name), 
+            data = dta_all)
+
+summ(OLS.4, digits = 3)
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+export_summs(OLS.1, OLS.2, OLS.3, OLS.4,
+             model.names = c("Model 1","Model 2","Model 3","Model 4"),
+             digits = 3)
+
+```
 
 
 
