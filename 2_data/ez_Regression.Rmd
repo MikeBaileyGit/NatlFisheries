@@ -52,8 +52,8 @@ import
 # Subset to Vietnam
 import_VN = import %>% 
   group_by(year_month, country_name) %>% 
-  summarise(volume_sum = sum(volume_kg)/1000,
-            value_sum = sum(value_USD)/1000) %>% 
+  summarise(volume_sum = sum(volume_kg),
+            value_sum = sum(value_USD)) %>% 
   filter(country_name %in% c("VIETNAM"))
 
 import_VN
@@ -64,8 +64,9 @@ import_VN
 
 # Load the refusal data
 load("output/build/compositeImportRefusal.Rdata")
-refusal = subset(composite, select = -c(catfish))
-refusal = as_tibble(refusal) %>% arrange(date)
+refusal = as_tibble(composite) %>% 
+  filter(catfish == 1) %>%
+  arrange(date)
 refusal
 
 ```
@@ -87,14 +88,17 @@ refusal_VN
 
 ```{r tidy = FALSE, message = FALSE}
 
-dta = import_VN %>%
+dta_VN = import_VN %>%
   full_join(refusal_VN, by = "year_month") %>%
   select(-c(country_std)) %>%
+  filter(year_month > as.yearmon("2013-12")) %>%
+  filter(year_month < as.yearmon("2020-03")) %>%
   mutate(USDA_dummy = ifelse(year_month > as.yearmon("2016-02"), 1, 0),
          year = year(year_month),
-         month = month(year_month))
-
-dta
+         month = month(year_month)) %>%
+  replace_na(list(refusal_count = 0))
+  
+dta_VN
 
 ```
 
@@ -103,7 +107,7 @@ dta
 ```{r tidy = FALSE, message = FALSE}
 
 OLS1 <- lm(refusal_count ~ USDA_dummy + volume_sum, 
-           data = dta)
+           data = dta_VN)
 
 summ(OLS1, digits = 3)
 
@@ -112,10 +116,10 @@ summ(OLS1, digits = 3)
 ```{r tidy = FALSE, message = FALSE}
 
 # Create an interaction variable
-dta$USDAxVolume = dta$USDA_dummy * dta$volume_sum
+dta_VN$USDAxVolume = dta_VN$USDA_dummy * dta_VN$volume_sum
 
 OLS2 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume, 
-           data = dta)
+           data = dta_VN)
 
 summ(OLS2, digits = 3)
 
@@ -125,7 +129,7 @@ summ(OLS2, digits = 3)
 
 # Add factor(month)
 OLS3 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month), 
-           data = dta)
+           data = dta_VN)
 
 summ(OLS3, digits = 3)
 
@@ -143,7 +147,6 @@ export_summs(OLS1, OLS2, OLS3,
 
 ```{r tidy = FALSE, message = FALSE}
 
-# Subset to Vietnam
 import_all = import %>% 
   group_by(year_month, country_name) %>% 
   summarise(volume_sum = sum(volume_kg),
@@ -155,7 +158,6 @@ import_all
 
 ```{r tidy = FALSE, message = FALSE}
 
-# Subset to Vietnam
 refusal_all = refusal %>% 
   mutate(year_month = as.yearmon(date, "%Y %B")) %>%
   group_by(year_month, country_std) %>%
@@ -169,15 +171,17 @@ refusal_all
 
 ```{r tidy = FALSE, message = FALSE}
 
-dta_all = import_all %>%
+dta = import_all %>%
   full_join(refusal_all, by = c("year_month","country_name" = "country_std")) %>%
-#  select(-c(country_std)) %>%
+  filter(year_month > as.yearmon("2013-12")) %>%
+  filter(year_month < as.yearmon("2020-03")) %>%
   mutate(USDA_dummy = ifelse(year_month > as.yearmon("2016-02"), 1, 0),
          year = year(year_month),
-         month = month(year_month))
+         month = month(year_month)) %>%
+  replace_na(list(refusal_count = 0))
 
-dta_all
-write.csv(dta_all,"output/build/ez_merged_data.csv")
+dta
+write.csv(dta,"output/build/ez_merged_data.csv")
 
 ```
 
@@ -186,7 +190,7 @@ write.csv(dta_all,"output/build/ez_merged_data.csv")
 ```{r tidy = FALSE, message = FALSE}
 
 OLS.1 <- lm(refusal_count ~ USDA_dummy + volume_sum, 
-            data = dta_all)
+            data = dta)
 
 summ(OLS.1, digits = 3)
 
@@ -195,10 +199,10 @@ summ(OLS.1, digits = 3)
 ```{r tidy = FALSE, message = FALSE}
 
 # Create an interaction variable
-dta_all$USDAxVolume = dta_all$USDA_dummy * dta_all$volume_sum
+dta$USDAxVolume = dta$USDA_dummy * dta$volume_sum
 
 OLS.2 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume, 
-            data = dta_all)
+            data = dta)
 
 summ(OLS.2, digits = 3)
 
@@ -208,7 +212,7 @@ summ(OLS.2, digits = 3)
 
 # Add factor(month)
 OLS.3 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month), 
-            data = dta_all)
+            data = dta)
 
 summ(OLS.3, digits = 3)
 
@@ -218,7 +222,7 @@ summ(OLS.3, digits = 3)
 
 # Add factor(country_name)
 OLS.4 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month) + factor(country_name), 
-            data = dta_all)
+            data = dta)
 
 summ(OLS.4, digits = 3)
 
