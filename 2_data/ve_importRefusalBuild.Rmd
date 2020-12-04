@@ -32,6 +32,11 @@ fda = read_csv("raw/FDA/Import_Refusal_2014-present/REFUSAL_ENTRY_2014-September
 ```
 
 ```{r}
+## FDA - catfish refusal weight
+kg = read_csv("raw/ITACS/FDA_ENTRY_NUM_REVIEW.CSV")
+```
+
+```{r}
 ## USDA - Archived
 usdaArchived = read_excel("raw/USDA/import-refusals-archived.xlsx", skip= 2)
 ```
@@ -45,6 +50,27 @@ usdaCurrent = read_excel("raw/USDA/import-refusals-current.xlsx", skip= 2)
 fsis = read_csv("output/build/fsisSiluriformesWords.csv")
 ```
 
+## Combine FDA and FDA Weight
+```{r}
+## Get list of column names to merge by
+fda_col = colnames(fda)
+
+## Dates need to be standardized because the review of ITACS ended up losing leading 0 in "REFUSAL DATE"
+fda$REFUSAL_DATE = as.Date(fda$REFUSAL_DATE, format= '%d-%b-%y')
+
+kg$REFUSAL_DATE = as.Date(kg$REFUSAL_DATE, format= '%d-%b-%y')
+
+## Merge weight data
+fda = merge(fda, kg, by= fda_col, all.x= TRUE)
+
+## Check count of non-missing weight data
+# 52 observations exist for Catfish, but one record related to Nigeria (NG) could not be found in ITACS
+fda[(!is.na(fda$Weight_Refused_KG)),]
+
+```
+
+
+
 
 ## Combine USDA data
 
@@ -57,11 +83,12 @@ usda = rbind(usdaCurrent, usdaArchived)
 ## Check for duplicates after row bind of Archived & Current
 usda[duplicated(usda),]
 ```
+
 ```{r}
 ## Check column names
 colnames(usda)
 
-## Update column names
+## Update column names to remove spacing/breaks
 names(usda)[names(usda) == "AppLot\r\nNumber"] = "app_lot_number"
 names(usda)[names(usda) == "Country"] = "country"
 names(usda)[names(usda) == "Received\r\nLot Date"] = "received_lot_date"
@@ -79,10 +106,6 @@ names(usda)[names(usda) == "Defect\r\nDescriptions"] = "defect_desc"
 ```{r}
 ## Check updated names
 colnames(usda)
-```
-
-```{r}
-#fsis = extract_tables("FSIS/Siluriformes-Fish-Species-FSIS.pdf")
 ```
 
 ## Flag catfish/pangasius records in both
@@ -129,6 +152,7 @@ fda = mutate(fda, fsis= ifelse(grepl(pattern, fda$PRDCT_CODE_DESC_TEXT), 1, 0))
 ## Check records flagged with catfish dummy
 fda[fda$fsis == 1,]
 ```
+
 ```{r}
 ## Product Descriptions flagged by FSIS indicator
 fdaFSIS = distinct(fda[fda$fsis==1,], PRDCT_CODE_DESC_TEXT)
@@ -156,11 +180,8 @@ usda[usda$catfish == 1,]
 ## Standardize date between FDA and USDA
 
 ```{r}
-## Check date data type
-typeof(fda$REFUSAL_DATE)
-
-## Convert to numeric
-fda$date = as.Date(fda$REFUSAL_DATE, '%d-%b-%y')
+## Create date variable
+fda$date = fda$REFUSAL_DATE
 ```
 
 ```{r}
@@ -175,21 +196,35 @@ usda$date = as.Date(usda$received_lot_date, '%Y-%m-%d')
 
 ```{r}
 ## Convert ISO Country Code to Long Name
+# Ambiguous values are not relevant and may be ignored.
 fda$country_std = toupper(countrycode(fda$ISO_CNTRY_CODE, origin= 'iso2c', destination= 'country.name'))
 ```
 
 ```{r}
 ## Convert ISO Country Code to Long Name
+# Ambiguous values are not relevant and may be ignored.
 usda$country_iso = toupper(countrycode(usda$country, origin= 'country.name', destination= 'iso2c'))
 
 usda$country_std = toupper(countrycode(usda$country_iso, origin= 'iso2c', destination= 'country.name'))
 ```
 
+## Standardize refused item weight to kg and a single variable
+```{r}
+## Create standardized variable
+fda$refusal_weight = ifelse(fda$catfish == 1, fda$Weight_Refused_KG, 0)
+```
+
+```{r}
+## Create standardized variable; convert lbs to kg
+usda$refusal_weight = ifelse(usda$catfish == 1, usda$final_weight_refused / 2.205, 0)
+```
+
+
 ## Pre-Merge: Add source and limit to relevant variables
 
 ```{r}
 ## Specify relevant variables to combine
-fdaVars = c("catfish","date","country_std", "MFG_FIRM_FEI_NUM", "LGL_NAME", "ENTRY_NUM", "PRDCT_CODE_DESC_TEXT")
+fdaVars = c("catfish","date","country_std", "MFG_FIRM_FEI_NUM", "LGL_NAME", "ENTRY_NUM","refusal_weight")
 
 ## Subset FDA data and add source
 fdaSubset = fda[fdaVars]
@@ -198,7 +233,7 @@ fdaSubset$source = "FDA"
 
 ```{r}
 ## Specify relevant variables to combine
-usdaVars = c("catfish","date","country_std", "export_establishment", "company_name", "app_lot_number", "product_category", "species_name")
+usdaVars = c("catfish","date","country_std", "export_establishment", "company_name", "app_lot_number", "product_category", "species_name", "refusal_weight")
 
 ## Subset FDA data and add source
 usdaSubset = usda[usdaVars]
