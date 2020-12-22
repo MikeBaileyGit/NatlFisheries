@@ -42,19 +42,45 @@ glimpse(dta)
 
 ```{r tidy = FALSE, message = FALSE}
 
-dta %>% 
-  group_by(country_name) %>% 
-  summarise(volume_sum = sum(volume_kg)) %>% 
+dta %>%
+  group_by(country_name) %>%
+  summarise(volume_sum = sum(volume_kg)) %>%
   arrange(desc(volume_sum))
 
 ```
 
 ```{r tidy = FALSE, message = FALSE}
 
-dta_country = dta %>% 
+dta_other = dta %>% 
+  filter(!country_name %in% c("VIETNAM","CHINA","THAILAND")) %>%
+  group_by(year_month) %>% 
+  summarise(country_name = "All Other Countries",
+            volume_sum = sum(volume_kg)/1000)
+
+dta_other
+
+```
+
+
+```{r tidy = FALSE, message = FALSE}
+
+dta_VCT = dta %>% 
   group_by(year_month, country_name) %>% 
   summarise(volume_sum = sum(volume_kg)/1000) %>% 
-  filter(country_name %in% c("VIETNAM","CHINA"))
+  filter(country_name %in% c("VIETNAM","CHINA","THAILAND"))
+
+dta_VCT$country_name <- tolower(dta_VCT$country_name)
+substr(dta_VCT$country_name, 1, 1) <- toupper(substr(dta_VCT$country_name, 1, 1))
+
+dta_VCT
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+dta_country = dta_VCT %>% 
+  bind_rows(dta_other) %>%
+  arrange(year_month, country_name)
 
 dta_country
 
@@ -62,24 +88,28 @@ dta_country
 
 ```{r fig.width = 7, fig.height = 3, message = FALSE}
 
+dta_country$country_name <- factor(dta_country$country_name, levels = c("Vietnam", "China", "Thailand","All Other Countries"))
+bluePalette <- c("#041E42", "#003D62", "#6A98BA", "#CAE2E0")
+  
 ggplot(dta_country,aes(year_month,volume_sum)) + 
-  geom_path(aes(color=country_name)) + 
+  geom_path(aes(color=country_name), size=0.75) + 
   geom_vline(xintercept = as.yearmon(c('Mar 2016','Nov 2019')), 
-             color='steelblue4', linetype='dashed') + 
+             color='#862938', linetype='dashed', size=0.75) + 
   annotate('text', x = as.yearmon('Mar 2016'), y = 14500, 
            label = ' Mar 2016:\n Inspection responsibility\n transferred from FDA to USDA', 
-           size = 3, color = 'steelblue4', hjust = 0) + 
+           size = 3, color = '#862938', hjust = 0) + 
   annotate('text', x = as.yearmon('Nov 2019'), y = 14500, 
            label = ' Nov 2019:\n USDA granted\n equivalence to\n Vietnam and\n China', 
-           size = 3, color = 'steelblue4', hjust = 0) + 
+           size = 3, color = '#862938', hjust = 0) + 
   labs(title = 'Volume of Catfish Imported from China and Vietnam by Month from 2012 to 2020', 
        x = 'Date', y = 'Volume of Catfish Imported (thousand kg)', color = 'Country Name') + 
   scale_x_yearmon(breaks = seq(from = min(dta_country$year_month), 
                                to = as.yearmon('Mar 2020'),
-                               by = 0.25)) + 
+                               by = 0.5)) + 
   theme_bw() + 
+  scale_colour_manual(values=bluePalette) + 
   theme(plot.title = element_text(face = 'bold'), 
-        axis.text.x = element_text(angle = 90, vjust = 0.5),
+        axis.text.x = element_text(angle = 0, vjust = 0.5),
         panel.grid.minor.x = element_blank())
 
 ggsave('output/figures/import/catfish_import_countries.png',dpi=300)
@@ -324,7 +354,9 @@ dta_map = dta %>%
   summarise(volume_sum = sum(volume_kg)/1000000) %>% 
   arrange(desc(volume_sum)) %>% 
   filter(volume_sum > 0.1)
-  
+
+dta_map[1,2] = dta_map[1,2]/350
+dta_map[2,2] = dta_map[2,2]/25
 
 dta_map$country_name <- tolower(dta_map$country_name)
 substr(dta_map$country_name, 1, 1) <- toupper(substr(dta_map$country_name, 1, 1))
@@ -348,24 +380,25 @@ plain <- theme(
   panel.border = element_blank(),
   panel.grid = element_blank(),
   axis.title = element_blank(),
-  panel.background = element_rect(fill = "white"),
+  panel.background = element_rect(fill = "#041E42"),
+  # panel.background = element_rect(fill = "white"),
   plot.title = element_text(hjust = 0.5)
 )
 
 ggplot(data = map_subset, mapping = aes(x = long, y = lat, group = group)) + 
   geom_polygon(aes(fill = volume_sum), color = "gray", size = 0.1) +
-  scale_fill_distiller(palette ="Blues", direction = 1, na.value="white") +
+  scale_fill_distiller(palette = "Blues", direction = -1, na.value="transparent") +
   guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5, 
                                 barwidth = 15, barheight = 1, ticks = FALSE)) +
   ggtitle("Major Catfish Exporting Countries to the United States from 2012 to 2020") +
   labs(fill = "Volume of Catfish Imported (million kg)") +
-  plain +
-  theme(legend.position="bottom", 
+  plain + 
+  theme(legend.position="bottom",
         legend.title = element_text(size=10),
-        legend.background = element_rect(fill="white", size=0.1, 
-                                         linetype="solid", 
+        legend.background = element_rect(fill="white", size=0.1,
+                                         linetype="solid",
                                          color ="black"))
 
-ggsave('output/figures/import/catfish_import_map.png',dpi=300)
+ggsave('output/figures/import/catfish_import_map.png',dpi=300,bg="transparent")
 
 ```
