@@ -1,5 +1,5 @@
 ---
-title: "Model 3: Refusals Explained by Base Specification"
+title: "Model 2: Refusals Explained by Base Specification"
 author: "Vince Egalla"
 date: "12/27/2020"
 output: html_document
@@ -14,6 +14,8 @@ options(scipen=999)
 ## Dependencies
 
 ```{r}
+library(ggplot2)
+library(sandwich)
 ```
 
 ## Load Data
@@ -32,4 +34,29 @@ ols.2 = lm(total_refusals ~  USDA01 + USDA_transition01 + import_volume_1M + USD
 summary(ols.2)
 
 save(ols.2, file="output/analysis/ve_analysis_2_ols.RData")
+```
+## Quality Check for Auto Correlation
+# A) Plot Residuals
+```{r}
+# Save residuals
+Err = resid(ols.2)
+# Generate lagged residual variable
+LagErr = c(NA, Err[1:(length(Err)-1)])
+# Auxiliary regression
+LagErrOLS = lm(Err ~ LagErr)
+
+# Display results
+summary(LagErrOLS)
+```
+```{r fig.width= 14, fig.height= 6}
+ggplot(monthly, aes(x= yrmonth, y= Err)) +
+  geom_point() + 
+  labs(x= "Year-Month", y= "Error", title= "Plot of Residuals over Time Period") +
+  theme(axis.text.x= element_text(angle= 90, vjust= 0.5))
+```
+# B) Newey-West Standard Errors
+```{r}
+length(monthly$USDA01) ^ 0.25
+NW_SE = sqrt(diag(NeweyWest(ols.2, lag= 4, prewhite= FALSE, adjust= TRUE)))
+NW_SE
 ```
