@@ -101,15 +101,18 @@ ggplot(dta_country,aes(year_month,volume_sum)) +
   annotate('text', x = as.yearmon('Nov 2019'), y = 14500, 
            label = ' Nov 2019:\n USDA granted\n equivalence to\n Vietnam and\n China', 
            size = 3, color = '#862938', hjust = 0) + 
+  # labs(title = 'Volume of Catfish Imported from China and Vietnam by Month from 2012 to 2020', 
+  #      x = 'Date', y = 'Volume of Catfish Imported (thousand kg)', color = 'Country Name') + 
   labs(title = 'Volume of Catfish Imported from China and Vietnam by Month from 2012 to 2020', 
-       x = 'Date', y = 'Volume of Catfish Imported (thousand kg)', color = 'Country Name') + 
+       x = '', y = '', color = 'Country Name') + 
   scale_x_yearmon(breaks = seq(from = min(dta_country$year_month), 
                                to = as.yearmon('Mar 2020'),
-                               by = 0.5)) + 
+                               by = 0.75)) + 
   theme_bw() + 
   scale_colour_manual(values=bluePalette) + 
   theme(plot.title = element_text(face = 'bold'), 
-        axis.text.x = element_text(angle = 0, vjust = 0.5),
+        axis.text.x = element_text(vjust = 0.5, size = 10),
+        axis.text.y = element_text(size = 10),
         panel.grid.minor.x = element_blank())
 
 ggsave('output/figures/import/catfish_import_countries.png',dpi=300)
@@ -453,12 +456,17 @@ ggplot(dta2_vietnam_year,aes(dategroup, year_volume)) +
   # annotate('text', x = as.Date('2019-11-05'), y = 39,
   #          label = ' Nov 2019:\n USDA granted\n equivalence to\n Vietnam',
   #          size = 3, color = 'steelblue4', hjust = 0) +
+  # labs(title = 'Volume of Catfish Imported from Vietnam by Year from 2002 to 2020', 
+  #      x = 'Date', y = 'Volume of Catfish Imported from Vietnam (million kg)') + 
   labs(title = 'Volume of Catfish Imported from Vietnam by Year from 2002 to 2020', 
-       x = 'Date', y = 'Volume of Catfish Imported from Vietnam (million kg)') + 
+       x = '', y = '') + 
   scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
   theme_bw() + 
   theme(plot.title = element_text(face = 'bold'),
-        panel.grid.minor.x = element_blank())
+        panel.grid.minor.x = element_blank(),
+        axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 10)
+        )
 
 ggsave('output/figures/import/catfish_vietnam_2002to2020.png',dpi=300)
 
