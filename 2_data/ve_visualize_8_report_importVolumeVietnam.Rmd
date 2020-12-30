@@ -1,0 +1,68 @@
+---
+title: "Import Rejection Consolidation"
+author: "Vince Egalla"
+date: "12/30/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dependencies
+
+```{r}
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(countrycode)
+library(lubridate)
+library(ggplot2)
+#library(extrafont)
+#font_import()
+#library(tabulizer)
+```
+
+## Load Data
+```{r tidy = FALSE, message = FALSE}
+
+dta2_vietnam = dta2 %>% 
+  dplyr::group_by(year_month, country_name) %>% 
+  dplyr::summarise(volume_sum = sum(volume_kg)/1000,
+            value_sum = sum(value_USD)/1000) %>% 
+  dplyr::filter(country_name == "VIETNAM")
+
+dta2_vietnam
+summary(dta2_vietnam)
+
+```
+
+```{r tidy = FALSE, message = FALSE}
+
+dta2_vietnam_year = dta2_vietnam %>% 
+  dplyr::mutate(dategroup = floor_date(as.Date(year_month), "1 year")) %>%
+  dplyr::group_by(dategroup) %>%
+  dplyr::summarise(year_volume = sum(volume_sum)/1000,
+            year_value = sum(value_sum)/1000)
+
+dta2_vietnam_year
+
+```
+
+```{r fig.width = 14, fig.height = 6, message = FALSE}
+
+ggplot(dta2_vietnam_year,aes(dategroup, year_volume)) + 
+  geom_point(size=2) + 
+  geom_path(color="#041E42",size=0.75) + 
+  labs(title = '', 
+       x = '', y = '') + 
+  scale_x_date(date_breaks = "1 year", date_labels = "%Y") +
+  theme_bw() + 
+  theme(plot.title = element_text(face = 'bold'),
+        panel.grid.minor.x = element_blank(),
+        text = element_text(size=20)) +
+  ylim(0, 150)
+
+ggsave('output/figures/import/report_catfish_vietnam_2002to2020.png',dpi=300)
+
+```

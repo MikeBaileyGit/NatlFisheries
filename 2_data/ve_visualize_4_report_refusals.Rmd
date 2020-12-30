@@ -1,0 +1,65 @@
+---
+title: "Import Rejection Consolidation"
+author: "Vince Egalla"
+date: "11/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dependencies
+
+```{r}
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(countrycode)
+library(lubridate)
+library(ggplot2)
+#library(extrafont)
+#font_import()
+#library(tabulizer)
+```
+
+## Load Data
+```{r}
+load("output/build/ve_analysis_dataset_3.Rdata")
+```
+
+```{r}
+monthly = monthly %>%
+  mutate(country_viz = ifelse(((country == "VIETNAM") | (country == "CHINA") | (country == "THAILAND")), country, "All Other Countries"))
+
+```
+
+```{r}
+monthly$country_viz <- factor(monthly$country_viz, levels = c("VIETNAM", "CHINA", "THAILAND","All Other Countries"))
+bluePalette <- c("#041E42", "#003D62", "#6A98BA", "#CAE2E0")
+
+
+str(monthly)
+
+monthly$yrmonth = as.yearmon(monthly$yrmonth)
+
+```
+
+```{r fig.width = 14, fig.height = 6, message = FALSE}
+## Monthly refusals over time period (Stacked Bar)
+ggplot(monthly, aes(x= yrmonth, y= total_refusals, fill= country_viz)) +
+  geom_bar(position= "stack", stat= "identity") +
+  labs(x= "", y= "", fill= "Country") +
+  theme_bw() + 
+  theme(axis.text.x= element_text(angle= 0, vjust= 0.5), text = element_text(size=16)) +
+  ylim(0, 100)  +
+  scale_x_yearmon(breaks = seq(from = as.yearmon(min(monthly$yrmonth)), 
+                               to = as.yearmon('2020-03'),
+                               by = 0.5)) + 
+  scale_fill_manual(values=bluePalette, labels = c("Vietnam", "China", "Thailand", "All Other Countries")) +
+  geom_vline(xintercept= as.yearmon("Mar 2016"), linetype= "dashed", color= "darkred") +
+  geom_vline(xintercept= as.yearmon("Sep 2017"), linetype= "dashed", color= "darkred") +
+  geom_hline(yintercept= 0)
+
+ggsave("output/figures/refusals/report_monthlyImportRefusalByCountryBar.png", dpi = 300)
+```

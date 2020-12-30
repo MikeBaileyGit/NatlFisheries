@@ -15,6 +15,9 @@ options(scipen=999)
 
 ```{r}
 library(stargazer)
+library(lmtest)
+library(sandwich)
+library(lubridate)
 ```
 
 ## Load Data
@@ -31,7 +34,16 @@ ols.1 = lm(total_refusals ~ USDA01, data= monthly)
 summary(ols.1)
 
 save(ols.1, file="output/analysis/ve_analysis_1_ols.RData")
+
+coeftest(ols.1, vcov = vcovHC(ols.1, type="HC1"))
 ```
+```{r}
+## Base Model
+ols.1.no = lm(total_refusals ~ USDA01, data= monthly[monthly$yrmonth != as.yearmon("Sep 2017"),])
+
+summary(ols.1.no)
+```
+
 ```{r}
 stargazer(ols.1, title="Results", align=TRUE)
 

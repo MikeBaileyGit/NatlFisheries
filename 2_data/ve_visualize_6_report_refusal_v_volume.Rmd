@@ -1,0 +1,49 @@
+---
+title: "Import Rejection Consolidation"
+author: "Vince Egalla"
+date: "11/6/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Dependencies
+
+```{r}
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(countrycode)
+library(lubridate)
+library(ggplot2)
+#library(extrafont)
+#font_import()
+#library(tabulizer)
+```
+
+## Load Data
+```{r}
+## Load analysis data
+load("output/build/ve_analysis_dataset_3.Rdata")
+```
+
+```{r}
+```
+
+```{r fig.width = 7, fig.height = 3, message = FALSE}
+
+bluePalette <- c("#6A98BA","#041E42")
+
+monthly$USDA_cat = ifelse(monthly$USDA01 == 1, "USDA", "FDA")
+
+## Plot of Coefficents
+ggplot(monthly, aes(x= import_volume, y= total_refusals, color= USDA_cat)) + 
+  geom_point(alpha = 0.8) + 
+  labs(x= "", y= "", color= "") +
+  theme_bw() +
+  scale_color_manual(values=bluePalette)
+
+ggsave("output/figures/analysis/report_importVolumeDiff.png", dpi = 300)
+```

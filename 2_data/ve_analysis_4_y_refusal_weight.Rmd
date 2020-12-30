@@ -15,6 +15,7 @@ options(scipen=999)
 
 ```{r}
 library(ggplot2)
+library(lmtest)
 ```
 
 ## Load Data
@@ -35,4 +36,6 @@ ols.4 = lm(refusal_weight_1M ~  USDA01 + USDA_transition01 + import_volume_1M + 
 summary(ols.4)
 
 save(ols.4, file="output/analysis/ve_analysis_4_ols.RData")
+
+coeftest(ols.4, vcov = vcovHC(ols.4, type="HC1"))
 ```

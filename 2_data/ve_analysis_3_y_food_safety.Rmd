@@ -15,6 +15,7 @@ options(scipen=999)
 
 ```{r}
 library(ggplot2)
+library(lmtest)
 ```
 
 ## Load Data
@@ -33,4 +34,12 @@ ols.3 = lm(fs_refusals ~  USDA01 + USDA_transition01 + import_volume_1M + USDAxV
 summary(ols.3)
 
 save(ols.3, file="output/analysis/ve_analysis_3_ols.RData")
+
+coeftest(ols.3, vcov = vcovHC(ols.3, type="HC1"))
+```
+```{r}
+## Base Model
+ols.3.no = lm(fs_refusals ~  USDA01 + USDA_transition01 + import_volume_1M + USDAxVolume1M +  factor(month) + factor(country), data= monthly[monthly$yrmonth != as.yearmon("Sep 2017"),])
+
+summary(ols.3.no)
 ```

@@ -1,0 +1,37 @@
+---
+title: "Model 2b: Refusals Explained by Base Specification (Counts Version)"
+author: "Vince Egalla"
+date: "12/27/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(digits = 3)
+options(scipen=999)
+```
+
+## Dependencies
+
+```{r}
+```
+
+## Load Data
+```{r}
+## Combined FDA + USDA data
+load("output/build/ve_analysis_dataset_2.Rdata")
+```
+
+
+
+## Linear Regression
+```{r}
+## Counts Model
+count.3 = glm(fs_refusals ~ USDA01 + USDA_transition01 + import_volume_1M + USDAxVolume1M +  factor(month) + factor(country),
+             family = poisson,
+             data= monthly)
+summary(count.3)
+
+
+save(count.3, file="output/analysis/ve_analysis_3b_count.RData")
+```
