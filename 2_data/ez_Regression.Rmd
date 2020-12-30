@@ -56,7 +56,7 @@ import_VN = import %>%
             value_sum = sum(value_USD)) %>% 
   filter(country_name %in% c("VIETNAM"))
 
-import_VN
+# import_VN
 
 ```
 
@@ -80,7 +80,7 @@ refusal_VN = refusal %>%
   summarise(refusal_count = n()) %>%
   filter(country_std %in% c("VIETNAM"))
 
-refusal_VN
+# refusal_VN
 
 ```
 
@@ -99,7 +99,7 @@ dta_VN = import_VN %>%
          month = month(year_month)) %>%
   replace_na(list(refusal_count = 0))
   
-dta_VN
+# dta_VN
 
 ```
 
@@ -110,11 +110,8 @@ dta_VN
 OLS1 <- lm(refusal_count ~ USDA_dummy + volume_sum, 
            data = dta_VN)
 
-summ(OLS1, digits = 3)
+# summ(OLS1, digits = 3)
 
-```
-
-```{r tidy = FALSE, message = FALSE}
 
 # Create an interaction variable
 dta_VN$USDAxVolume = dta_VN$USDA_dummy * dta_VN$volume_sum
@@ -122,17 +119,14 @@ dta_VN$USDAxVolume = dta_VN$USDA_dummy * dta_VN$volume_sum
 OLS2 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume, 
            data = dta_VN)
 
-summ(OLS2, digits = 3)
+# summ(OLS2, digits = 3)
 
-```
-
-```{r tidy = FALSE, message = FALSE}
 
 # Add factor(month)
 OLS3 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month), 
            data = dta_VN)
 
-summ(OLS3, digits = 3)
+# summ(OLS3, digits = 3)
 
 ```
 
@@ -153,7 +147,7 @@ import_all = import %>%
   summarise(volume_sum = sum(volume_kg),
             value_sum = sum(value_USD))
 
-import_all
+# import_all
 
 ```
 
@@ -164,7 +158,7 @@ refusal_all = refusal %>%
   group_by(year_month, country_std) %>%
   summarise(refusal_count = n())
 
-refusal_all
+# refusal_all
 
 ```
 
@@ -176,11 +170,16 @@ dta = import_all %>%
   full_join(refusal_all, by = c("year_month","country_name" = "country_std")) %>%
   filter(year_month > as.yearmon("2013-12")) %>%
   filter(year_month < as.yearmon("2020-03")) %>%
-#  mutate(USDA_dummy = ifelse(year_month > as.yearmon("2016-02"), 1, 0),
-  mutate(USDA_dummy = ifelse(year_month > as.yearmon("2017-08"), 1, 0),
+  mutate(USDA_trans = ifelse(year_month > as.yearmon("2016-02") & year_month < as.yearmon("2017-09"), 1, 0),
+         USDA_dummy = ifelse(year_month > as.yearmon("2017-08"), 1, 0),
+         volume_sum_1m = volume_sum/1000000,
          year = year(year_month),
          month = month(year_month)) %>%
-  replace_na(list(refusal_count = 0))
+  replace_na(list(refusal_count = 0)) %>%
+  drop_na(volume_sum)
+
+load("output/build/ve_analysis_dataset.Rdata")
+dta$refusal_count = monthly$total_refusals
 
 dta
 write.csv(dta,"output/build/ez_merged_data.csv")
@@ -191,42 +190,33 @@ write.csv(dta,"output/build/ez_merged_data.csv")
 
 ```{r tidy = FALSE, message = FALSE}
 
-OLS.1 <- lm(refusal_count ~ USDA_dummy + volume_sum, 
+OLS.1 <- lm(refusal_count ~ USDA_dummy + volume_sum_1m, 
             data = dta)
 
-summ(OLS.1, digits = 3)
+# summ(OLS.1, digits = 3)
 
-```
-
-```{r tidy = FALSE, message = FALSE}
 
 # Create an interaction variable
-dta$USDAxVolume = dta$USDA_dummy * dta$volume_sum
+dta$USDAxVolume = dta$USDA_dummy * dta$volume_sum_1m
 
-OLS.2 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume, 
+OLS.2 <- lm(refusal_count ~ USDA_dummy + volume_sum_1m + USDAxVolume, 
             data = dta)
 
-summ(OLS.2, digits = 3)
+# summ(OLS.2, digits = 3)
 
-```
-
-```{r tidy = FALSE, message = FALSE}
 
 # Add factor(month)
-OLS.3 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month), 
+OLS.3 <- lm(refusal_count ~ USDA_dummy + volume_sum_1m + USDAxVolume + factor(month) + factor(country_name),  
             data = dta)
 
-summ(OLS.3, digits = 3)
+# summ(OLS.3, digits = 3)
 
-```
-
-```{r tidy = FALSE, message = FALSE}
 
 # Add factor(country_name)
-OLS.4 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month) + factor(country_name), 
+OLS.4 <- lm(refusal_count ~ USDA_dummy + USDA_trans + volume_sum_1m + USDAxVolume + factor(month) + factor(country_name), 
             data = dta)
 
-summ(OLS.4, digits = 3)
+# summ(OLS.4, digits = 3)
 
 ```
 
@@ -245,7 +235,7 @@ export_summs(OLS.1, OLS.2, OLS.3, OLS.4,
 # coeftest(OLS.1, vcov = vcovHC(OLS.1, type = "HC1"))
 # coeftest(OLS.2, vcov = vcovHC(OLS.2, type = "HC1"))
 # coeftest(OLS.3, vcov = vcovHC(OLS.3, type = "HC1"))
-coeftest(OLS.4, vcov = vcovHC(OLS.4, type = "HC1"))
+# coeftest(OLS.4, vcov = vcovHC(OLS.4, type = "HC1"))
 
 ```
 
@@ -260,11 +250,8 @@ import_VCT = import %>%
             value_sum = sum(value_USD)) %>% 
   filter(country_name %in% c("VIETNAM","CHINA","THAILAND"))
 
-import_VCT
+# import_VCT
 
-```
-
-```{r tidy = FALSE, message = FALSE}
 
 # Subset to Vietnam
 refusal_VCT = refusal %>% 
@@ -273,13 +260,8 @@ refusal_VCT = refusal %>%
   summarise(refusal_count = n()) %>%
   filter(country_std %in% c("VIETNAM","CHINA","THAILAND"))
 
-refusal_VCT
+# refusal_VCT
 
-```
-
-## Merge import and refusal
-
-```{r tidy = FALSE, message = FALSE}
 
 dta_VCT = import_VCT %>%
   full_join(refusal_VN, by = "year_month") %>%
@@ -292,7 +274,7 @@ dta_VCT = import_VCT %>%
          month = month(year_month)) %>%
   replace_na(list(refusal_count = 0))
   
-dta_VCT
+# dta_VCT
 
 ```
 
@@ -316,7 +298,6 @@ OLS44 <- lm(refusal_count ~ USDA_dummy + volume_sum + USDAxVolume + factor(month
             data = dta_VCT)
 
 ```
-
 
 ```{r tidy = FALSE, message = FALSE}
 
