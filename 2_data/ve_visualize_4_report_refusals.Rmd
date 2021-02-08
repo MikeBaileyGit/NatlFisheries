@@ -1,7 +1,7 @@
 ---
 title: "Import Rejection Consolidation"
 author: "Vince Egalla"
-date: "11/6/2020"
+date: "12/8/2021"
 output: html_document
 ---
 
@@ -18,6 +18,7 @@ library(dplyr)
 library(countrycode)
 library(lubridate)
 library(ggplot2)
+library(zoo)
 #library(extrafont)
 #font_import()
 #library(tabulizer)
@@ -37,7 +38,6 @@ monthly = monthly %>%
 ```{r}
 monthly$country_viz <- factor(monthly$country_viz, levels = c("VIETNAM", "CHINA", "THAILAND","All Other Countries"))
 bluePalette <- c("#041E42", "#003D62", "#6A98BA", "#CAE2E0")
-
 
 str(monthly)
 
@@ -62,4 +62,24 @@ ggplot(monthly, aes(x= yrmonth, y= total_refusals, fill= country_viz)) +
   geom_hline(yintercept= 0)
 
 ggsave("output/figures/refusals/report_monthlyImportRefusalByCountryBar.png", dpi = 300)
+```
+```{r fig.width = 14, fig.height = 6, message = FALSE}
+## Monthly refusals over time period (Stacked Bar)
+ggplot(monthly, aes(x= yrmonth, y= total_refusals, fill= country_viz)) +
+  geom_bar(position= "stack", stat= "identity") +
+  labs(x= "Month", y= "Total Monthly Refusals", title= "Monthly Catfish Refusals from Major Exporters, 2014-2020",fill= "Country") +
+  theme_bw() + 
+  theme(axis.text.x= element_text(angle= 0, vjust= 0.5), text = element_text(size=16)) +
+  ylim(0, 100)  +
+  scale_x_yearmon(breaks = seq(from = as.yearmon(min(monthly$yrmonth)), 
+                               to = as.yearmon('2020-03'),
+                               by = 0.5)) + 
+  scale_fill_manual(values=bluePalette, labels = c("Vietnam", "China", "Thailand", "All Other Countries")) +
+  geom_vline(xintercept= as.yearmon("Mar 2016"), linetype= "dashed", color= "darkred") +
+  geom_vline(xintercept= as.yearmon("Sep 2017"), linetype= "dashed", color= "darkred") +
+  annotate("text", x= as.yearmon("Feb 2016"), y= 100, color= "darkred", label= "March 2016\nTransition to USDA\nauthority begins", hjust= 1, vjust= 1, fontface= 2) +
+  annotate("text", x= as.yearmon("Nov 2017"), y= 100, color= "darkred", label= "September 2017\nUSDA authority\nfinalized", hjust= 0, vjust= 1, fontface= 2) +
+  geom_hline(yintercept= 0)
+
+ggsave("output/figures/refusals/request_monthlyImportRefusalByCountryBar.png", dpi = 300)
 ```
